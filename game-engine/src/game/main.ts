@@ -1,34 +1,64 @@
-import {ScreenBorder} from './game-screen'
-import { ScreenBuffer } from '../engine/ScreenBuffer';
 import { GameLoop } from '../engine/GameLoop';
-import { Renderer } from '../engine/Renderer';
-import { BorderRenderer, DescriptionRenderer } from "./renderable-classes"
-import { FlickererEntityTester } from './flickerer_entity';
+import { EntityManager } from '../engine/EntityManager';
+import { ScreenBuffer } from '../engine/ScreenBuffer';
+import { SystemManager } from '../engine/SystemManager';
+import { MovementSystem } from '../engine/MovementSystem';
+import { BoundsSystem } from '../engine/BoundsSystem';
+import { RenderSystem } from '../engine/RenderSystem';
+import { Input } from '../engine/Input';
+import { PlayerInputSystem } from './PlayerInputSystem';
 
-function main () {
+const WIDTH = 60;
+const HEIGHT = 20;
 
-  const bor = new ScreenBorder(213, 50, " ");
-  const buffer = new ScreenBuffer(bor.x,bor.y, bor.borderString);
-  const renderer = new Renderer(buffer)
+const world = new EntityManager();
+const input = new Input();
+const buffer = new ScreenBuffer(WIDTH, HEIGHT);
 
-  const borderRender = new BorderRenderer("#",bor.x,bor.y,buffer);
-  const descriptionRenderer = new DescriptionRenderer("_",bor.x,bor.y,buffer)
-  const flickerEntity = new FlickererEntityTester("@", 5, 5, buffer, 0);
+// Player
+const player = world.createEntity();
+world.addComponent(player, 'position',   { x: WIDTH / 2, y: HEIGHT / 2 });
+world.addComponent(player, 'velocity',   { dx: 0, dy: 0 });
+world.addComponent(player, 'appearance', { char: '' });
 
-  renderer.add(borderRender);
-  renderer.add(descriptionRenderer);
-  renderer.add(flickerEntity);
-  
-  const gameLoop = new GameLoop(30, (deltaTime) => {
-    renderer.display();
-  });
-
-  gameLoop.start();
-
-  setTimeout(() => {
-    console.log('Timeout Finished, stopping Engine');
-    gameLoop.stop();
-  }, 5000);
+// A handful of drifting obstacles — no extra classes needed
+for (let i = 0; i < 10; i++) {
+  const e = world.createEntity();
+  world.addComponent(e, 'position',   { x: Math.random() * WIDTH, y: Math.random() * HEIGHT });
+  world.addComponent(e, 'velocity',   { dx: (Math.random() - 0.5) * 10, dy: (Math.random() - 0.5) * 10 });
+  world.addComponent(e, 'appearance', { char: '*' });
 }
 
-main();
+// The pipeline — order matters!
+const systems = new SystemManager();
+systems.add(new PlayerInputSystem(input, player, 10));
+systems.add(new MovementSystem());
+systems.add(new BoundsSystem(WIDTH, HEIGHT));
+systems.add(new RenderSystem(buffer, (b) => {
+  process.stdout.write('\x1b[H');
+  process.stdout.write(b.toString());
+}));
+
+process.stdout.write('\x1b[?25l'); // hide cursor
+
+const loop = new GameLoop(30, (deltaTime) => {
+  systems.update(world, deltaTime);
+
+  if (input.wasJustPressed('ctrl-c') || input.wasJustPressed('escape')) {
+    cleanup();
+  }
+
+  input.endFrame();
+});
+
+function cleanup(): void {
+  loop.stop();
+  input.close();
+  process.stdout.write('\x1b[?25h');
+  process.exit(0);
+}
+
+process.on('SIGINT', cleanup);
+process.on('exit', () => process.stdout.write('\x1b[?25h'));
+
+loop.start();

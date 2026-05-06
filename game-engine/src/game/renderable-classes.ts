@@ -1,5 +1,4 @@
 import {ScreenBuffer} from "../engine/ScreenBuffer"
-import {Renderer} from "../engine/Renderer"
 import { Renderable } from "../engine/Renderable"
 
 
@@ -43,7 +42,7 @@ export class BorderRenderer implements Renderable {
 
 }
 
-export class DescriptionRenderer implements Renderable {
+export class DescriptionBorder implements Renderable {
   x : number;
   y: number;
   text : string;

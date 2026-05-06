@@ -109,4 +109,26 @@ export class EntityManager {
     }
   }
 
+  // NOTE: Entity Querying Function
+
+  /*
+  * This function will check for any entities that have the componentNames listed 
+  * in the function call parameters, then return all of them.
+  */
+  query(...componentNames: string[]): Entity[] {
+    let entityNames: Entity[] = [];
+    
+    // Run Through Entities list, and check for any Entities that contain the components.
+    for (const entity of this.entities) {
+      let entityComponents = this.components.get(entity)!;
+      let hasAll = componentNames.every(name => entityComponents.has(name));
+      // If an Entity has all of the listed comonents, it pushes it to the EntityNames array.
+      if (hasAll === true) {
+        entityNames.push(entity);
+      }
+    }
+
+    return entityNames;
+  }
+
 }
