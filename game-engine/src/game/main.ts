@@ -26,7 +26,7 @@ for (let i = 0; i < 10; i++) {
   const e = world.createEntity();
   world.addComponent(e, 'position',   { x: Math.random() * WIDTH, y: Math.random() * HEIGHT });
   world.addComponent(e, 'velocity',   { dx: (Math.random() - 0.5) * 10, dy: (Math.random() - 0.5) * 10 });
-  world.addComponent(e, 'appearance', { char: '*' });
+  world.addComponent(e, 'appearance', { char: '$' });
 }
 
 // The pipeline — order matters!
